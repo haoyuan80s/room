@@ -28,8 +28,11 @@ impl State {
                     .name
                     .to_lowercase()
                     .contains(&self.filter.to_lowercase())
+                || (tab.position + 1).to_string() == self.filter
         } else {
-            tab.name == self.filter || tab.name.contains(&self.filter)
+            tab.name == self.filter
+                || tab.name.contains(&self.filter)
+                || (tab.position + 1).to_string() == self.filter
         }
     }
 
@@ -130,12 +133,12 @@ impl ZellijPlugin for State {
                 close_focus();
             }
 
-            Event::Key(Key::Down | Key::BackTab) => {
+            Event::Key(Key::Down | Key::Ctrl('n')) => {
                 self.select_down();
 
                 should_render = true;
             }
-            Event::Key(Key::Up | Key::Ctrl('k')) => {
+            Event::Key(Key::Up | Key::Ctrl('p')) => {
                 self.select_up();
 
                 should_render = true;
@@ -186,19 +189,20 @@ impl ZellijPlugin for State {
             "{}",
             self.viewable_tabs_iter()
                 .map(|tab| {
-                    let row = if tab.active {
-                        format!("{} - {}", tab.position + 1, tab.name)
-                            .red()
-                            .bold()
-                            .to_string()
-                    } else {
-                        format!("{} - {}", tab.position + 1, tab.name)
-                    };
-
-                    if Some(tab.position) == self.selected {
-                        row.on_cyan().to_string()
-                    } else {
-                        row
+                    match tab {
+                        TabInfo { active: true, .. } => {
+                            format!("{} - {}", tab.position + 1, tab.name)
+                                .red()
+                                .bold()
+                                .to_string()
+                        }
+                        TabInfo { position, .. } if Some(*position) == self.selected => {
+                            format!("{} - {}", tab.position + 1, tab.name)
+                                .green()
+                                .bold()
+                                .to_string()
+                        }
+                        _ => format!("{} - {}", tab.position + 1, tab.name),
                     }
                 })
                 .collect::<Vec<String>>()
