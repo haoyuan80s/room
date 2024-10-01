@@ -154,6 +154,17 @@ impl ZellijPlugin for State {
                     switch_tab_to(tab.position as u32 + 1);
                 }
             }
+            Event::Key(Key::Ctrl('x')) => {
+                let tab = self
+                    .tabs
+                    .iter()
+                    .find(|tab| Some(tab.position) == self.selected);
+
+                if let Some(tab) = tab {
+                    switch_tab_to(tab.position as u32 + 1);
+                }
+                close_focused_tab()
+            }
             Event::Key(Key::Backspace) => {
                 self.filter.pop();
 
@@ -189,20 +200,19 @@ impl ZellijPlugin for State {
             "{}",
             self.viewable_tabs_iter()
                 .map(|tab| {
-                    match tab {
-                        TabInfo { active: true, .. } => {
-                            format!("{} - {}", tab.position + 1, tab.name)
-                                .red()
-                                .bold()
-                                .to_string()
-                        }
-                        TabInfo { position, .. } if Some(*position) == self.selected => {
-                            format!("{} - {}", tab.position + 1, tab.name)
-                                .green()
-                                .bold()
-                                .to_string()
-                        }
-                        _ => format!("{} - {}", tab.position + 1, tab.name),
+                    let row = if tab.active {
+                        format!("{} - {}", tab.position + 1, tab.name)
+                            .red()
+                            .bold()
+                            .to_string()
+                    } else {
+                        format!("{} - {}", tab.position + 1, tab.name)
+                    };
+
+                    if Some(tab.position) == self.selected {
+                        row.on_truecolor(120, 120, 120).to_string()
+                    } else {
+                        row
                     }
                 })
                 .collect::<Vec<String>>()
